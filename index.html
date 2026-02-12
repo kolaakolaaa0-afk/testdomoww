@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Шифровщик 3D для MTA</title>
+<style>
+body { font-family: sans-serif; background: #1f172a; color: #fff; text-align:center; padding:30px; }
+input, button { margin:10px; padding:15px; font-size:16px; }
+button { background:#bb6b03; color:#fff; border:none; border-radius:10px; cursor:pointer; }
+button:hover { background:#d77f20; }
+</style>
+</head>
+<body>
+
+<h1>Шифровщик 3D для MTA</h1>
+
+<p>Название модели:</p>
+<input type="text" id="modelName" placeholder="MyCar">
+
+<p>Выберите файлы (.dff, .txd, .col)</p>
+<input type="file" id="fileInput" multiple>
+<br>
+<button id="encryptBtn">Шифровать все</button>
+
+<script>
+const KEY = "BlackOnlineSecure2026";
+
+function xorCrypt(buffer, key) {
+    const keyBytes = new TextEncoder().encode(key);
+    const result = new Uint8Array(buffer.length);
+    for (let i = 0; i < buffer.length; i++) {
+        result[i] = buffer[i] ^ keyBytes[i % keyBytes.length];
+    }
+    return result;
+}
+
+function downloadFile(data, filename) {
+    const blob = new Blob([data], {type:"application/octet-stream"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById("encryptBtn").onclick = () => {
+    const files = document.getElementById("fileInput").files;
+    const baseName = document.getElementById("modelName").value.trim();
+    if(!baseName){
+        alert("Введите название модели!");
+        return;
+    }
+    if(files.length === 0){
+        alert("Выберите хотя бы один файл!");
+        return;
+    }
+
+    // Проходим по каждому файлу и создаем отдельный FileReader
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const buffer = new Uint8Array(e.target.result);
+            const encrypted = xorCrypt(buffer, KEY);
+            // index+1 гарантирует правильную нумерацию _1, _2, _3
+            downloadFile(encrypted, `${baseName}_${index+1}.sec`);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+};
+</script>
+</body>
+</html>
